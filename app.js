@@ -4,7 +4,7 @@
 const SUPABASE_URL = "https://hwensuljfbogccxcgflh.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZW5zdWxqZmJvZ2NjeGNnZmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExNDU1ODUsImV4cCI6MjA4NjcyMTU4NX0.7bBnhyjggTv_yW7_pptYL0WJcWb13LWOCRvF2keoWl4";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Enums
 const LEAD_STATUSES = ["Новый","Контакт","Бриф","КП/Смета","Переговоры","Договор","Оплата","Закрыто","Потеряно"];
