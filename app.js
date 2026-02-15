@@ -2,7 +2,7 @@
 // 1) CONFIG: paste your Supabase URL + anon key here
 // =======================
 const SUPABASE_URL = "https://hwensuljfbogccxcgflh.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable__Fkq1lYZdEff6rcKpfNKPw_UetiLIHr";
+const SUPABASE_ANON_KEY = "sb_secret_5DFvzR92bENML_b347YmQw_5T90wMsn";
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
