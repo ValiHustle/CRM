@@ -1,10 +1,10 @@
 // =======================
 // 1) CONFIG: paste your Supabase URL + anon key here
 // =======================
-const SUPABASE_URL = "https://hwensuljfbogccxcgflh.supabase.co";
+const SUPABASE_URL = "https://hwensuljfbogccxcgflh.sb.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZW5zdWxqZmJvZ2NjeGNnZmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExNDU1ODUsImV4cCI6MjA4NjcyMTU4NX0.7bBnhyjggTv_yW7_pptYL0WJcWb13LWOCRvF2keoWl4";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Enums
 const LEAD_STATUSES = ["Новый","Контакт","Бриф","КП/Смета","Переговоры","Договор","Оплата","Закрыто","Потеряно"];
@@ -86,7 +86,7 @@ loginForm.addEventListener("submit", async (e)=>{
   const fd = new FormData(loginForm);
   const email = fd.get("email");
   const password = fd.get("password");
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await sb.auth.signInWithPassword({ email, password });
   if(error) return setMsg(loginMsg, error.message);
 });
 
@@ -96,16 +96,16 @@ signupForm.addEventListener("submit", async (e)=>{
   const fd = new FormData(signupForm);
   const email = fd.get("email");
   const password = fd.get("password");
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { error } = await sb.auth.signUp({ email, password });
   if(error) return setMsg(signupMsg, error.message);
   setMsg(signupMsg, "✅ Пользователь создан. Теперь можно войти.");
 });
 
 logoutBtn.addEventListener("click", async ()=>{
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
 });
 
-supabase.auth.onAuthStateChange(async (_event, session)=>{
+sb.auth.onAuthStateChange(async (_event, session)=>{
   if(session?.user){
     authView.classList.add("hidden");
     appView.classList.remove("hidden");
@@ -122,7 +122,7 @@ supabase.auth.onAuthStateChange(async (_event, session)=>{
 });
 
 (async ()=>{
-  const { data } = await supabase.auth.getSession();
+  const { data } = await sb.auth.getSession();
   if(data?.session?.user){
     authView.classList.add("hidden");
     appView.classList.remove("hidden");
@@ -167,14 +167,14 @@ async function bootstrapUI(){
 async function loadDashboard(){
   // counts
   const [leadsC, projC, eqC, taskC] = await Promise.all([
-    supabase.from("leads").select("id", { count: "exact", head: true }),
-    supabase.from("projects").select("id", { count: "exact", head: true }),
-    supabase.from("equipment").select("id", { count: "exact", head: true }),
-    supabase.from("tasks").select("id", { count: "exact", head: true }).eq("done", false),
+    sb.from("leads").select("id", { count: "exact", head: true }),
+    sb.from("projects").select("id", { count: "exact", head: true }),
+    sb.from("equipment").select("id", { count: "exact", head: true }),
+    sb.from("tasks").select("id", { count: "exact", head: true }).eq("done", false),
   ]);
 
   // conflicts count via view
-  const conflicts = await supabase.from("reservation_conflicts").select("*", { count: "exact", head: true });
+  const conflicts = await sb.from("reservation_conflicts").select("*", { count: "exact", head: true });
 
   const kpis = document.getElementById("kpis");
   kpis.innerHTML = "";
@@ -201,7 +201,7 @@ async function loadLeads(){
   const q = document.getElementById("leadSearch").value?.trim();
   const status = document.getElementById("leadStatus").value;
 
-  let query = supabase.from("leads").select("*").order("created_at",{ascending:false}).limit(200);
+  let query = sb.from("leads").select("*").order("created_at",{ascending:false}).limit(200);
   if(status) query = query.eq("status", status);
   if(q) query = query.or(`title.ilike.%${q}%,source.ilike.%${q}%,city.ilike.%${q}%`);
 
@@ -267,10 +267,10 @@ function leadEdit(row){
     };
     if(!payload.title) throw new Error("Название обязательно");
     if(row?.id){
-      const { error } = await supabase.from("leads").update(payload).eq("id", row.id);
+      const { error } = await sb.from("leads").update(payload).eq("id", row.id);
       if(error) throw error;
     }else{
-      const { error } = await supabase.from("leads").insert(payload);
+      const { error } = await sb.from("leads").insert(payload);
       if(error) throw error;
     }
     await loadLeads(); await loadDashboard();
@@ -279,7 +279,7 @@ function leadEdit(row){
 
 async function leadDelete(id){
   if(!confirm("Удалить лид?")) return;
-  const { error } = await supabase.from("leads").delete().eq("id", id);
+  const { error } = await sb.from("leads").delete().eq("id", id);
   if(error) return alert(error.message);
   await loadLeads(); await loadDashboard();
 }
@@ -291,7 +291,7 @@ async function loadProjects(){
   const q = document.getElementById("projectSearch").value?.trim();
   const stage = document.getElementById("projectStage").value;
 
-  let query = supabase.from("projects").select("*").order("created_at",{ascending:false}).limit(200);
+  let query = sb.from("projects").select("*").order("created_at",{ascending:false}).limit(200);
   if(stage) query = query.eq("stage", stage);
   if(q) query = query.or(`title.ilike.%${q}%,client_name.ilike.%${q}%,venue.ilike.%${q}%,city.ilike.%${q}%`);
 
@@ -372,10 +372,10 @@ function projectEdit(row){
     }
 
     if(row?.id){
-      const { error } = await supabase.from("projects").update(payload).eq("id", row.id);
+      const { error } = await sb.from("projects").update(payload).eq("id", row.id);
       if(error) throw error;
     }else{
-      const { error } = await supabase.from("projects").insert(payload);
+      const { error } = await sb.from("projects").insert(payload);
       if(error) throw error;
     }
     await loadProjects(); await loadDashboard();
@@ -384,7 +384,7 @@ function projectEdit(row){
 
 async function projectDelete(id){
   if(!confirm("Удалить проект? (удалятся и резервы/задачи)")) return;
-  const { error } = await supabase.from("projects").delete().eq("id", id);
+  const { error } = await sb.from("projects").delete().eq("id", id);
   if(error) return alert(error.message);
   await loadProjects(); await loadReservations(); await loadTasks(); await loadDashboard();
 }
@@ -394,7 +394,7 @@ async function projectDelete(id){
 // =======================
 async function loadEquipment(){
   const q = document.getElementById("equipmentSearch").value?.trim();
-  let query = supabase.from("equipment").select("*").order("created_at",{ascending:false}).limit(300);
+  let query = sb.from("equipment").select("*").order("created_at",{ascending:false}).limit(300);
   if(q) query = query.or(`name.ilike.%${q}%,category.ilike.%${q}%`);
 
   const { data, error } = await query;
@@ -440,10 +440,10 @@ function equipmentEdit(row){
     if(!payload.name) throw new Error("Название обязательно");
 
     if(row?.id){
-      const { error } = await supabase.from("equipment").update(payload).eq("id", row.id);
+      const { error } = await sb.from("equipment").update(payload).eq("id", row.id);
       if(error) throw error;
     }else{
-      const { error } = await supabase.from("equipment").insert(payload);
+      const { error } = await sb.from("equipment").insert(payload);
       if(error) throw error;
     }
     await loadEquipment(); await loadDashboard();
@@ -452,7 +452,7 @@ function equipmentEdit(row){
 
 async function equipmentDelete(id){
   if(!confirm("Удалить позицию склада? (если есть резервы — удаление может не пройти)")) return;
-  const { error } = await supabase.from("equipment").delete().eq("id", id);
+  const { error } = await sb.from("equipment").delete().eq("id", id);
   if(error) return alert(error.message);
   await loadEquipment(); await loadDashboard();
 }
@@ -462,7 +462,7 @@ async function equipmentDelete(id){
 // =======================
 async function loadTasks(){
   const doneVal = document.getElementById("taskDone").value; // "0","1",""
-  let query = supabase.from("tasks_view").select("*").order("due_date",{ascending:true}).limit(300);
+  let query = sb.from("tasks_view").select("*").order("due_date",{ascending:true}).limit(300);
   if(doneVal !== "") query = query.eq("done", doneVal === "1");
   const { data, error } = await query;
   if(error) return alert(error.message);
@@ -490,13 +490,13 @@ async function loadTasks(){
 }
 
 async function taskToggle(row){
-  const { error } = await supabase.from("tasks").update({ done: !row.done }).eq("id", row.id);
+  const { error } = await sb.from("tasks").update({ done: !row.done }).eq("id", row.id);
   if(error) return alert(error.message);
   await loadTasks(); await loadDashboard();
 }
 
 async function taskEdit(row){
-  const projects = await supabase.from("projects").select("id,title").order("created_at",{ascending:false}).limit(200);
+  const projects = await sb.from("projects").select("id,title").order("created_at",{ascending:false}).limit(200);
   const opts = (projects.data||[]).map(p=>`<option value="${p.id}" ${row?.project_id===p.id?"selected":""}>${htmlEscape(p.title)}</option>`).join("");
 
   const r = row || { title:"", due_date:"", project_id:"", notes:"", done:false };
@@ -534,10 +534,10 @@ async function taskEdit(row){
     if(!payload.title) throw new Error("Название обязательно");
 
     if(row?.id){
-      const { error } = await supabase.from("tasks").update(payload).eq("id", row.id);
+      const { error } = await sb.from("tasks").update(payload).eq("id", row.id);
       if(error) throw error;
     }else{
-      const { error } = await supabase.from("tasks").insert(payload);
+      const { error } = await sb.from("tasks").insert(payload);
       if(error) throw error;
     }
     await loadTasks(); await loadDashboard();
@@ -546,7 +546,7 @@ async function taskEdit(row){
 
 async function taskDelete(id){
   if(!confirm("Удалить задачу?")) return;
-  const { error } = await supabase.from("tasks").delete().eq("id", id);
+  const { error } = await sb.from("tasks").delete().eq("id", id);
   if(error) return alert(error.message);
   await loadTasks(); await loadDashboard();
 }
@@ -559,7 +559,7 @@ async function loadReservations(){
   const from = document.getElementById("resFrom").value || null;
   const to = document.getElementById("resTo").value || null;
 
-  let query = supabase.from("reservations_view").select("*").order("start_date",{ascending:false}).limit(300);
+  let query = sb.from("reservations_view").select("*").order("start_date",{ascending:false}).limit(300);
   if(from) query = query.gte("end_date", from); // overlap filter
   if(to) query = query.lte("start_date", to);
   if(q) query = query.or(`project_title.ilike.%${q}%,equipment_name.ilike.%${q}%`);
@@ -588,8 +588,8 @@ async function loadReservations(){
 
 async function reservationCreate(){
   const [projects, equipment] = await Promise.all([
-    supabase.from("projects").select("id,title,start_date,end_date").order("created_at",{ascending:false}).limit(200),
-    supabase.from("equipment").select("id,name,qty_total").order("name",{ascending:true}).limit(400),
+    sb.from("projects").select("id,title,start_date,end_date").order("created_at",{ascending:false}).limit(200),
+    sb.from("equipment").select("id,name,qty_total").order("name",{ascending:true}).limit(400),
   ]);
   const pOpts = (projects.data||[]).map(p=>`<option value="${p.id}">${htmlEscape(p.title)}</option>`).join("");
   const eOpts = (equipment.data||[]).map(e=>`<option value="${e.id}">${htmlEscape(e.name)} (всего ${e.qty_total})</option>`).join("");
@@ -633,7 +633,7 @@ async function reservationCreate(){
     if(!payload.p_project_id || !payload.p_equipment_id) throw new Error("Проект и оборудование обязательны");
     if(payload.p_end < payload.p_start) throw new Error("Дата конца не может быть раньше начала");
 
-    const { data, error } = await supabase.rpc("create_reservation", payload);
+    const { data, error } = await sb.rpc("create_reservation", payload);
     if(error) throw error;
     await loadReservations(); await loadDashboard();
   });
@@ -641,7 +641,7 @@ async function reservationCreate(){
 
 async function reservationDelete(id){
   if(!confirm("Удалить резерв?")) return;
-  const { error } = await supabase.from("reservations").delete().eq("id", id);
+  const { error } = await sb.from("reservations").delete().eq("id", id);
   if(error) return alert(error.message);
   await loadReservations(); await loadDashboard();
 }
