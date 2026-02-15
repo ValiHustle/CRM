@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lumiart CRM — Online (Supabase) v2</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">⚙️ Lumiart CRM <span class="muted">online v2</span></div>
+    <div class="topbar-right">
+      <div id="userBadge" class="badge hidden"></div>
+      <button id="logoutBtn" class="btn btn-ghost hidden">Выйти</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Auth -->
+    <section id="authView" class="card">
+      <h2>Вход</h2>
+      <p class="muted">Онлайн CRM: статический сайт + Supabase (БД + логины + RLS). Нужны URL + Anon Key в <span class="mono">app.js</span>.</p>
+
+      <div class="grid2">
+        <div>
+          <h3>Войти</h3>
+          <form id="loginForm" class="form">
+            <label>Email</label>
+            <input name="email" type="email" placeholder="you@company.com" required />
+            <label>Пароль</label>
+            <input name="password" type="password" placeholder="••••••••" required />
+            <button class="btn btn-primary" type="submit">Войти</button>
+            <div id="loginMsg" class="msg"></div>
+          </form>
+        </div>
+
+        <div>
+          <h3>Создать пользователя</h3>
+          <form id="signupForm" class="form">
+            <label>Email</label>
+            <input name="email" type="email" placeholder="new@company.com" required />
+            <label>Пароль</label>
+            <input name="password" type="password" placeholder="минимум 6 символов" minlength="6" required />
+            <button class="btn" type="submit">Зарегистрировать</button>
+            <div class="muted small">⚠️ В Supabase Auth включи Email/Password.</div>
+            <div id="signupMsg" class="msg"></div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- App -->
+    <section id="appView" class="hidden">
+      <section class="card">
+        <div class="row">
+          <div>
+            <h2 style="margin:0">Дашборд</h2>
+            <div class="muted small">Быстрые метрики и конфликты резерва</div>
+          </div>
+          <button class="btn" id="refreshAll">Обновить всё</button>
+        </div>
+        <div class="kpis" id="kpis"></div>
+        <div class="muted small" id="conflictsNote" style="margin-top:10px"></div>
+      </section>
+
+      <nav class="tabs">
+        <button class="tab active" data-tab="leads">Лиды</button>
+        <button class="tab" data-tab="projects">Проекты</button>
+        <button class="tab" data-tab="reservations">Резервы</button>
+        <button class="tab" data-tab="equipment">Склад</button>
+        <button class="tab" data-tab="tasks">Задачи</button>
+      </nav>
+
+      <!-- Leads -->
+      <section class="card tabpane" id="tab-leads">
+        <div class="row">
+          <h2>Лиды</h2>
+          <button class="btn btn-primary" id="leadNewBtn">+ Лид</button>
+        </div>
+        <div class="filters">
+          <input id="leadSearch" placeholder="Поиск: название / источник / город" />
+          <select id="leadStatus">
+            <option value="">Все статусы</option>
+          </select>
+          <button class="btn" id="leadRefresh">Обновить</button>
+        </div>
+        <div class="tablewrap">
+          <table class="table" id="leadsTable">
+            <thead>
+              <tr>
+                <th>Название</th><th>Статус</th><th>Источник</th><th>Дата</th><th>Город</th><th class="right">—</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Projects -->
+      <section class="card tabpane hidden" id="tab-projects">
+        <div class="row">
+          <h2>Проекты</h2>
+          <button class="btn btn-primary" id="projectNewBtn">+ Проект</button>
+        </div>
+        <div class="filters">
+          <input id="projectSearch" placeholder="Поиск: название / клиент / площадка" />
+          <select id="projectStage">
+            <option value="">Все этапы</option>
+          </select>
+          <button class="btn" id="projectRefresh">Обновить</button>
+        </div>
+        <div class="tablewrap">
+          <table class="table" id="projectsTable">
+            <thead>
+              <tr>
+                <th>Проект</th><th>Этап</th><th>Период</th><th>Город</th><th>Площадка</th><th class="right">—</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Reservations -->
+      <section class="card tabpane hidden" id="tab-reservations">
+        <div class="row">
+          <h2>Резервы оборудования</h2>
+          <button class="btn btn-primary" id="reserveNewBtn">+ Резерв</button>
+        </div>
+        <div class="filters">
+          <input id="resSearch" placeholder="Поиск: проект / оборудование" />
+          <input id="resFrom" type="date" />
+          <input id="resTo" type="date" />
+          <button class="btn" id="resRefresh">Обновить</button>
+        </div>
+        <div class="tablewrap">
+          <table class="table" id="resTable">
+            <thead>
+              <tr>
+                <th>Проект</th><th>Оборудование</th><th>Кол-во</th><th>Период</th><th class="right">—</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="muted small" style="margin-top:10px">
+          ⚠️ Резерв создаётся через RPC с проверкой доступности (по датам). Конфликты считаются в базе.
+        </div>
+      </section>
+
+      <!-- Equipment -->
+      <section class="card tabpane hidden" id="tab-equipment">
+        <div class="row">
+          <h2>Склад</h2>
+          <button class="btn btn-primary" id="equipmentNewBtn">+ Позиция</button>
+        </div>
+        <div class="filters">
+          <input id="equipmentSearch" placeholder="Поиск: название / категория" />
+          <button class="btn" id="equipmentRefresh">Обновить</button>
+        </div>
+        <div class="tablewrap">
+          <table class="table" id="equipmentTable">
+            <thead>
+              <tr>
+                <th>Название</th><th>Категория</th><th>Всего</th><th class="right">—</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="muted small" style="margin-top:10px">
+          Доступность по датам считается через таблицу резервов (а не через "qty_available" вручную).
+        </div>
+      </section>
+
+      <!-- Tasks -->
+      <section class="card tabpane hidden" id="tab-tasks">
+        <div class="row">
+          <h2>Задачи</h2>
+          <button class="btn btn-primary" id="taskNewBtn">+ Задача</button>
+        </div>
+        <div class="filters">
+          <select id="taskDone">
+            <option value="0">Открытые</option>
+            <option value="">Все</option>
+            <option value="1">Выполненные</option>
+          </select>
+          <button class="btn" id="taskRefresh">Обновить</button>
+        </div>
+        <div class="tablewrap">
+          <table class="table" id="tasksTable">
+            <thead>
+              <tr>
+                <th>Задача</th><th>Срок</th><th>Проект</th><th>Статус</th><th class="right">—</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <!-- Modal -->
+    <div id="modal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-head">
+          <div id="modalTitle" class="modal-title">—</div>
+          <button id="modalClose" class="btn btn-ghost">✕</button>
+        </div>
+        <form id="modalForm" class="form">
+          <div id="modalBody"></div>
+          <div class="row right">
+            <button type="button" id="modalCancel" class="btn btn-ghost">Отмена</button>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+          </div>
+          <div id="modalMsg" class="msg"></div>
+        </form>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer muted small">
+    🔒 Только для авторизованных пользователей · 💾 Postgres · 🧠 Резерв по датам
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
